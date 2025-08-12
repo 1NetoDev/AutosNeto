@@ -12,17 +12,17 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.action_chains import ActionChains
 
 # =====================================================================================
 # --- CONFIGURAÇÕES (VERIFIQUE SE OS VALORES ESTÃO CORRETOS) ---
 # =====================================================================================
 
 # 1. --- LOGIN ---
-# ATENÇÃO: Preencha seu usuário e senha reais aqui.
 SEU_USUARIO = "t432893"
 SUA_SENHA = "432893@Estradas"
 
-# Seletores da tela de login (JÁ CONFIGURADOS)
+# Seletores da tela de login
 NAME_CAMPO_USUARIO_LOGIN = "username"
 NAME_CAMPO_SENHA_LOGIN = "password"
 CSS_SELECTOR_BOTAO_LOGIN = "button[type='submit']"
@@ -36,16 +36,23 @@ ID_IFRAME = "iframe-form-app"
 ID_RAMAL = "input_LT_RAMAL"
 ID_TIPO_SOLICITACAO = "input_LT_TIPO_PROCESSO"
 ID_TITULO = "input_TITULO_REQUISICAO"
-CSS_SELECTOR_BOTAO_FECHAR_WELCOME = "span.ant-modal-close-x" # Seletor para o 'X' do pop-up de boas-vindas
+CSS_SELECTOR_BOTAO_FECHAR_WELCOME = "span.ant-modal-close-x"
 
-# IDs dos "containers" dos campos com Lupa
+# 4. IDs dos "containers" dos campos com Lupa (Formulário Principal)
 ID_CONTAINER_CASA = "input_LT_CASA"
 ID_CONTAINER_CATEGORIA = "input_LT_CAT"
 ID_CONTAINER_SUBCATEGORIA = "input_LT_SUB_CAT"
 ID_CONTAINER_SERVICO = "input_LT_SERVICO"
 ID_CONTAINER_GRUPO_ATEND = "input_LT_GRUPO_ATEND"
 
-# 4. Textos Padrão para os Campos
+# 5. --- ATUALIZAÇÃO: IDs dos campos de BUSCA dentro de cada Lupa ---
+ID_LUPA_INPUT_CASA = "LT_CASA__lookup-modal"
+ID_LUPA_INPUT_CATEGORIA = "LT_CATEGORIA__lookup-modal"
+ID_LUPA_INPUT_SUBCATEGORIA = "LT_SUB_CAT__lookup-modal"
+ID_LUPA_INPUT_SERVICO = "LT_SERVICO__lookup-modal"
+ID_LUPA_INPUT_GRUPO_ATEND = "LT_GRUPO_ATEND__lookup-modal"
+
+# 6. Textos Padrão para os Campos
 TEXTO_CASA = "HOSPITAL SANTA CATARINA"
 TEXTO_RAMAL = "0000"
 TEXTO_CATEGORIA = "Software"
@@ -55,17 +62,16 @@ TEXTO_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES"
 TEXTO_GRUPO_ATEND = "Servicedesk"
 TEXTO_TITULO = "Registro de Ligação"
 
-# 5. Seletor para o botão "FILTRAR" dentro da Lupa
+# 7. Seletor para o botão "FILTRAR" dentro da Lupa
 SELETOR_CSS_BOTAO_FILTRAR = "button.btn.waves-effect.waves-light"
 
 # =====================================================================================
 # --- FIM DAS CONFIGURAÇÕES ---
 # =====================================================================================
 
-# Variável global para armazenar a instância do navegador
 driver = None
 
-def preencher_campo_lupa(wait, status_updater, id_container_lupa, texto_busca):
+def preencher_campo_lupa(wait, status_updater, id_container_lupa, id_campo_busca_lupa, texto_busca):
     """Função para automatizar o preenchimento de campos com o padrão 'Lupa'."""
     try:
         status_updater(f"Processando Lupa: {texto_busca}...")
@@ -73,26 +79,17 @@ def preencher_campo_lupa(wait, status_updater, id_container_lupa, texto_busca):
         id_botao_lupa = id_container_lupa.replace("input_", "") + "_lookup"
         lupa_icon = wait.until(EC.element_to_be_clickable((By.ID, id_botao_lupa)))
         lupa_icon.click()
-
-        # --- NOVA LÓGICA DE ESPERA E INTERAÇÃO ---
-        # ATUALIZAÇÃO: Pausa aumentada para 2 segundos para a animação da modal.
-        time.sleep(2.0) 
         
-        id_campo_busca = id_container_lupa.replace("input_", "input_") + "_lookup-modal"
+        time.sleep(1.5) # Pausa para a animação da modal carregar.
         
         status_updater("Aguardando campo de busca...")
-        # Espera o elemento estar presente no HTML, não necessariamente visível.
-        campo_busca = wait.until(EC.presence_of_element_located((By.ID, id_campo_busca)))
+        campo_busca = wait.until(EC.presence_of_element_located((By.ID, id_campo_busca_lupa)))
         
-        time.sleep(1.0) # Pausa adicional para garantir que o campo esteja pronto.
-
-        status_updater("Preenchendo busca com JS...")
-        # Injeta o valor via JavaScript, que é mais robusto.
-        driver.execute_script("arguments[0].value = arguments[1];", campo_busca, texto_busca)
-        # Dispara um evento 'input' para que o framework da página reconheça a mudança.
-        driver.execute_script("arguments[0].dispatchEvent(new Event('input', { bubbles: true }))", campo_busca)
+        status_updater("Simulando clique humano...")
+        actions = ActionChains(driver)
+        actions.move_to_element(campo_busca).click().pause(1).click().send_keys(texto_busca).perform()
         
-        time.sleep(1.0) # Pausa para garantir que o sistema processe o valor injetado
+        time.sleep(1.0) # Pausa para garantir que o sistema processe o valor
         driver.find_element(By.CSS_SELECTOR, SELETOR_CSS_BOTAO_FILTRAR).click()
         
         xpath_resultado = f"//td[contains(text(), '{texto_busca.upper()}')]"
@@ -175,20 +172,20 @@ def preencher_formulario(status_label):
             atualizar_status("Procurando formulário (iframe)...")
             wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, ID_IFRAME)))
             
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_CASA, TEXTO_CASA): return
+            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_CASA, ID_LUPA_INPUT_CASA, TEXTO_CASA): return
             
             atualizar_status("Preenchendo Ramal...")
             driver.find_element(By.ID, ID_RAMAL).send_keys(TEXTO_RAMAL)
             
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_CATEGORIA, TEXTO_CATEGORIA): return
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_SUBCATEGORIA, TEXTO_SUBCATEGORIA): return
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_SERVICO, TEXTO_SERVICO): return
+            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_CATEGORIA, ID_LUPA_INPUT_CATEGORIA, TEXTO_CATEGORIA): return
+            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_SUBCATEGORIA, ID_LUPA_INPUT_SUBCATEGORIA, TEXTO_SUBCATEGORIA): return
+            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_SERVICO, ID_LUPA_INPUT_SERVICO, TEXTO_SERVICO): return
             
             atualizar_status("Selecionando Tipo de Solicitação...")
             dropdown = Select(driver.find_element(By.ID, ID_TIPO_SOLICITACAO))
             dropdown.select_by_visible_text(TEXTO_TIPO_SOLICITACAO)
             
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_GRUPO_ATEND, TEXTO_GRUPO_ATEND): return
+            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_GRUPO_ATEND, ID_LUPA_INPUT_GRUPO_ATEND, TEXTO_GRUPO_ATEND): return
             
             atualizar_status("Preenchendo Título...")
             driver.find_element(By.ID, ID_TITULO).send_keys(TEXTO_TITULO)

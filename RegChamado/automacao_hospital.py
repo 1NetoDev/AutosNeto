@@ -42,7 +42,7 @@ ID_RAMAL = "LT_RAMAL"
 ID_DROPDOWN_TIPO_SOLICITACAO = "LS_PROCESSO"
 ID_TITULO = "LT_TITULO_REQUISICAO"
 CSS_SELECTOR_BOTAO_FECHAR_WELCOME = "span.ant-modal-close-x"
-XPATH_BOTAO_FECHAR_MENSAGENS = "//*[@id='social']/div/div/div[2]/div[1]/div[1]/div/div[2]/i[3]" # ATUALIZADO
+XPATH_BOTAO_FECHAR_MENSAGENS = "//*[@id='social']/div/div/div[2]/div[1]/div[1]/div/div[2]/i[3]"
 
 # 5. XPaths dos ícones de LUPA
 XPATH_LUPA_CASA = "//*[@id='LT_CASA_lookup']"
@@ -51,12 +51,12 @@ XPATH_LUPA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup']"
 XPATH_LUPA_SERVICO = "//*[@id='LT_SERVICO_lookup']"
 XPATH_LUPA_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup']"
 
-# 6. IDs dos campos de BUSCA dentro de cada Lupa
-ID_LUPA_INPUT_CASA = "LT_CASA__lookup-modal"
-ID_LUPA_INPUT_CATEGORIA = "LT_CATEGORIA__lookup-modal"
-ID_LUPA_INPUT_SUBCATEGORIA = "LT_SUB_CAT__lookup-modal"
-ID_LUPA_INPUT_SERVICO = "LT_SERVICO__lookup-modal"
-ID_LUPA_INPUT_GRUPO_ATEND = "LT_GRUPO_ATEND__lookup-modal"
+# 6. IDs dos campos de BUSCA dentro de cada Lupa (CORRIGIDOS)
+ID_LUPA_INPUT_CASA = "LT_CASA_lookup-modal"
+ID_LUPA_INPUT_CATEGORIA = "LT_CATEGORIA_lookup-modal"
+ID_LUPA_INPUT_SUBCATEGORIA = "LT_SUB_CAT_lookup-modal"
+ID_LUPA_INPUT_SERVICO = "LT_SERVICO_lookup-modal"
+ID_LUPA_INPUT_GRUPO_ATEND = "LT_GRUPO_ATEND_lookup-modal"
 
 # 7. Textos Padrão para os Campos
 TEXTO_CASA = "HOSPITAL SANTA CATARINA"
@@ -68,8 +68,10 @@ TEXTO_DROPDOWN_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES"
 TEXTO_GRUPO_ATEND = "Servicedesk"
 TEXTO_TITULO = "Registro de Ligação"
 
-# 8. Seletor para o botão "FILTRAR" dentro da Lupa
+# 8. Seletor para o botão "FILTRAR" e CÉLULA DE RESULTADO dentro da Lupa
 XPATH_BOTAO_FILTRAR = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_CELULA_RESULTADO = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+
 
 # =====================================================================================
 # --- FIM DAS CONFIGURAÇÕES ---
@@ -87,7 +89,7 @@ def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_l
             lupa_icon = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_lupa_icon)))
             lupa_icon.click()
             
-            time.sleep(1.0) # Delay reduzido
+            time.sleep(1.0)
             
             campo_busca = wait.until(EC.presence_of_element_located((By.ID, id_campo_busca_lupa)))
             
@@ -97,23 +99,27 @@ def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_l
             botao_filtrar = wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_FILTRAR)))
             botao_filtrar.click()
             
-            xpath_resultado = f"//td[contains(text(), '{texto_busca.upper()}')]"
-            primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_resultado)))
+            # --- LÓGICA ATUALIZADA ---
+            time.sleep(0.3) # Pausa solicitada
+            
+            status_updater("Aguardando resultado...")
+            primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_CELULA_RESULTADO)))
             primeiro_resultado.click()
             
+            time.sleep(0.3) # Pausa solicitada
+            
             status_updater(f"OK: {texto_busca} selecionado.")
-            return True # Sucesso, sai da função
+            return True
         except Exception as e:
             print(f"Erro na tentativa {tentativa} da Lupa ({texto_busca}): {e}")
             if tentativa == MAX_TENTATIVAS:
                 status_updater(f"ERRO na Lupa: {texto_busca}!")
-                return False # Falhou em todas as tentativas
+                return False
             status_updater(f"Retentando Lupa: {texto_busca}...")
-            # Se a modal ainda estiver aberta, tenta fechá-la antes de retentar
             try:
                 driver.find_element(By.XPATH, "//button[text()='FECHAR']").click()
             except:
-                pass # Ignora se o botão de fechar não for encontrado
+                pass
 
 def iniciar_navegador(status_label, botao_preencher):
     """Abre o navegador, faz login e fecha os pop-ups."""
@@ -162,7 +168,6 @@ def iniciar_navegador(status_label, botao_preencher):
             atualizar_status("Procurando janela de mensagens...")
             try:
                 time.sleep(2)
-                # ATUALIZADO para usar o novo XPath
                 botao_fechar_mensagens = wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_FECHAR_MENSAGENS)))
                 botao_fechar_mensagens.click()
                 atualizar_status("Janela de mensagens fechada.")
@@ -199,15 +204,15 @@ def preencher_formulario(status_label):
             
             atualizar_status("Clicando em 'Abrir'...")
             wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_ABRIR_MENU))).click()
-            time.sleep(0.6) # Delay ajustado
+            time.sleep(0.6)
 
             atualizar_status("Clicando na aba 'Favoritos'...")
             wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_TAB_FAVORITOS))).click()
-            time.sleep(0.4) # Delay ajustado
+            time.sleep(0.4)
 
             atualizar_status("Selecionando processo 'TI - Operador'...")
             wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_LINK_PROCESSO_TI))).click()
-            time.sleep(1.5) # Mantém uma pausa maior aqui para o formulário carregar
+            time.sleep(1.5)
             
             atualizar_status("Procurando formulário (iframe)...")
             wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, ID_IFRAME)))

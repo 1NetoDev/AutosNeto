@@ -8,6 +8,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
+from selenium.common.exceptions import WebDriverException
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
@@ -29,41 +30,46 @@ CSS_SELECTOR_BOTAO_LOGIN = "button[type='submit']"
 
 # 2. URLs
 URL_SISTEMA = "https://app.santacatarina.lecom.com.br/sso/login?redirectBackTo=https://app.santacatarina.lecom.com.br/workspace"
-URL_FORMULARIO_DIRETO = "https://app.santacatarina.lecom.com.br/workspace/form-app/349731/4/1?isNewForm=true"
 
-# 3. IDs e Seletores do Formulário e Pop-ups
+# 3. --- SELETORES PARA CRIAR NOVO FORMULÁRIO ---
+XPATH_BOTAO_ABRIR_MENU = "//li[.//span[text()='Abrir']]"
+XPATH_TAB_FAVORITOS = "/html/body/div[3]/div/div[2]/div/div/div/div/div[1]/div[2]/div[1]/div/div/div/div/div[1]/div[3]"
+XPATH_LINK_PROCESSO_TI = "/html/body/div[3]/div/div[2]/div/div/div/div/div[1]/div[2]/div[3]/div[3]/div[2]/div/div[2]"
+
+# 4. IDs e Seletores do Formulário e Pop-ups
 ID_IFRAME = "iframe-form-app"
-ID_RAMAL = "input_LT_RAMAL"
-ID_TIPO_SOLICITACAO = "input_LT_TIPO_PROCESSO"
-ID_TITULO = "input_TITULO_REQUISICAO"
+ID_RAMAL = "LT_RAMAL"
+ID_DROPDOWN_TIPO_SOLICITACAO = "LS_PROCESSO"
+ID_TITULO = "LT_TITULO_REQUISICAO"
 CSS_SELECTOR_BOTAO_FECHAR_WELCOME = "span.ant-modal-close-x"
+XPATH_BOTAO_FECHAR_MENSAGENS = "//*[@id='social']/div/div/div[2]/div[1]/div[1]/div/div[2]/i[3]" # ATUALIZADO
 
-# 4. IDs dos "containers" dos campos com Lupa (Formulário Principal)
-ID_CONTAINER_CASA = "input_LT_CASA"
-ID_CONTAINER_CATEGORIA = "input_LT_CAT"
-ID_CONTAINER_SUBCATEGORIA = "input_LT_SUB_CAT"
-ID_CONTAINER_SERVICO = "input_LT_SERVICO"
-ID_CONTAINER_GRUPO_ATEND = "input_LT_GRUPO_ATEND"
+# 5. XPaths dos ícones de LUPA
+XPATH_LUPA_CASA = "//*[@id='LT_CASA_lookup']"
+XPATH_LUPA_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup']"
+XPATH_LUPA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup']"
+XPATH_LUPA_SERVICO = "//*[@id='LT_SERVICO_lookup']"
+XPATH_LUPA_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup']"
 
-# 5. --- ATUALIZAÇÃO: IDs dos campos de BUSCA dentro de cada Lupa ---
+# 6. IDs dos campos de BUSCA dentro de cada Lupa
 ID_LUPA_INPUT_CASA = "LT_CASA__lookup-modal"
 ID_LUPA_INPUT_CATEGORIA = "LT_CATEGORIA__lookup-modal"
 ID_LUPA_INPUT_SUBCATEGORIA = "LT_SUB_CAT__lookup-modal"
 ID_LUPA_INPUT_SERVICO = "LT_SERVICO__lookup-modal"
 ID_LUPA_INPUT_GRUPO_ATEND = "LT_GRUPO_ATEND__lookup-modal"
 
-# 6. Textos Padrão para os Campos
+# 7. Textos Padrão para os Campos
 TEXTO_CASA = "HOSPITAL SANTA CATARINA"
 TEXTO_RAMAL = "0000"
 TEXTO_CATEGORIA = "Software"
 TEXTO_SUBCATEGORIA = "Navegadores"
 TEXTO_SERVICO = "Configuração"
-TEXTO_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES"
+TEXTO_DROPDOWN_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES"
 TEXTO_GRUPO_ATEND = "Servicedesk"
 TEXTO_TITULO = "Registro de Ligação"
 
-# 7. Seletor para o botão "FILTRAR" dentro da Lupa
-SELETOR_CSS_BOTAO_FILTRAR = "button.btn.waves-effect.waves-light"
+# 8. Seletor para o botão "FILTRAR" dentro da Lupa
+XPATH_BOTAO_FILTRAR = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
 
 # =====================================================================================
 # --- FIM DAS CONFIGURAÇÕES ---
@@ -71,39 +77,46 @@ SELETOR_CSS_BOTAO_FILTRAR = "button.btn.waves-effect.waves-light"
 
 driver = None
 
-def preencher_campo_lupa(wait, status_updater, id_container_lupa, id_campo_busca_lupa, texto_busca):
-    """Função para automatizar o preenchimento de campos com o padrão 'Lupa'."""
-    try:
-        status_updater(f"Processando Lupa: {texto_busca}...")
-        
-        id_botao_lupa = id_container_lupa.replace("input_", "") + "_lookup"
-        lupa_icon = wait.until(EC.element_to_be_clickable((By.ID, id_botao_lupa)))
-        lupa_icon.click()
-        
-        time.sleep(1.5) # Pausa para a animação da modal carregar.
-        
-        status_updater("Aguardando campo de busca...")
-        campo_busca = wait.until(EC.presence_of_element_located((By.ID, id_campo_busca_lupa)))
-        
-        status_updater("Simulando clique humano...")
-        actions = ActionChains(driver)
-        actions.move_to_element(campo_busca).click().pause(1).click().send_keys(texto_busca).perform()
-        
-        time.sleep(1.0) # Pausa para garantir que o sistema processe o valor
-        driver.find_element(By.CSS_SELECTOR, SELETOR_CSS_BOTAO_FILTRAR).click()
-        
-        xpath_resultado = f"//td[contains(text(), '{texto_busca.upper()}')]"
-        primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_resultado)))
-        primeiro_resultado.click()
-        status_updater(f"OK: {texto_busca} selecionado.")
-        return True
-    except Exception as e:
-        status_updater(f"ERRO na Lupa: {texto_busca}!")
-        print(f"Erro detalhado (Lupa {texto_busca}): {e}")
-        return False
+def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_lupa, texto_busca):
+    """Função para automatizar o preenchimento de campos com o padrão 'Lupa', com lógica de retentativa."""
+    MAX_TENTATIVAS = 3
+    for tentativa in range(1, MAX_TENTATIVAS + 1):
+        try:
+            status_updater(f"Lupa: {texto_busca} (Tentativa {tentativa})...")
+            
+            lupa_icon = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_lupa_icon)))
+            lupa_icon.click()
+            
+            time.sleep(1.0) # Delay reduzido
+            
+            campo_busca = wait.until(EC.presence_of_element_located((By.ID, id_campo_busca_lupa)))
+            
+            actions = ActionChains(driver)
+            actions.move_to_element(campo_busca).click().pause(0.5).send_keys(texto_busca).perform()
+            
+            botao_filtrar = wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_FILTRAR)))
+            botao_filtrar.click()
+            
+            xpath_resultado = f"//td[contains(text(), '{texto_busca.upper()}')]"
+            primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_resultado)))
+            primeiro_resultado.click()
+            
+            status_updater(f"OK: {texto_busca} selecionado.")
+            return True # Sucesso, sai da função
+        except Exception as e:
+            print(f"Erro na tentativa {tentativa} da Lupa ({texto_busca}): {e}")
+            if tentativa == MAX_TENTATIVAS:
+                status_updater(f"ERRO na Lupa: {texto_busca}!")
+                return False # Falhou em todas as tentativas
+            status_updater(f"Retentando Lupa: {texto_busca}...")
+            # Se a modal ainda estiver aberta, tenta fechá-la antes de retentar
+            try:
+                driver.find_element(By.XPATH, "//button[text()='FECHAR']").click()
+            except:
+                pass # Ignora se o botão de fechar não for encontrado
 
 def iniciar_navegador(status_label, botao_preencher):
-    """Abre o navegador, faz login e fecha o pop-up de boas-vindas."""
+    """Abre o navegador, faz login e fecha os pop-ups."""
     
     def run_login():
         global driver
@@ -113,11 +126,18 @@ def iniciar_navegador(status_label, botao_preencher):
         
         try:
             if driver is None:
+                atualizar_status("Verificando Chrome...")
+                try:
+                    service = Service(ChromeDriverManager().install())
+                except WebDriverException:
+                    atualizar_status("ERRO: Chrome não encontrado!")
+                    messagebox.showerror("Navegador não Encontrado", "O Google Chrome não foi encontrado neste computador.\n\nPor favor, instale o Google Chrome para usar esta automação.")
+                    return
+
                 atualizar_status("Configurando driver...")
                 chrome_options = Options()
                 chrome_options.add_argument("--window-size=1366,768")
                 chrome_options.add_argument("--disable-notifications")
-                service = Service(ChromeDriverManager().install())
                 driver = webdriver.Chrome(service=service, options=chrome_options)
             
             atualizar_status("Acessando sistema...")
@@ -131,13 +151,23 @@ def iniciar_navegador(status_label, botao_preencher):
             atualizar_status("Realizando login...")
             driver.find_element(By.CSS_SELECTOR, CSS_SELECTOR_BOTAO_LOGIN).click()
 
-            atualizar_status("Login OK. Procurando pop-up...")
+            atualizar_status("Login OK. Procurando pop-up de boas-vindas...")
             try:
                 botao_fechar_welcome = wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, CSS_SELECTOR_BOTAO_FECHAR_WELCOME)))
                 botao_fechar_welcome.click()
                 atualizar_status("Pop-up de boas-vindas fechado.")
             except Exception:
-                atualizar_status("Pop-up não encontrado. Prosseguindo.")
+                atualizar_status("Pop-up de boas-vindas não encontrado.")
+
+            atualizar_status("Procurando janela de mensagens...")
+            try:
+                time.sleep(2)
+                # ATUALIZADO para usar o novo XPath
+                botao_fechar_mensagens = wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_FECHAR_MENSAGENS)))
+                botao_fechar_mensagens.click()
+                atualizar_status("Janela de mensagens fechada.")
+            except Exception:
+                atualizar_status("Janela de mensagens não encontrada.")
 
             atualizar_status("Navegador pronto!")
             botao_preencher.config(state=tk.NORMAL)
@@ -152,7 +182,7 @@ def iniciar_navegador(status_label, botao_preencher):
     threading.Thread(target=run_login, daemon=True).start()
 
 def preencher_formulario(status_label):
-    """Navega para o formulário e preenche os campos."""
+    """Cria um novo formulário e preenche os campos."""
     global driver
 
     def run_fill():
@@ -165,27 +195,37 @@ def preencher_formulario(status_label):
             return
         
         try:
-            atualizar_status("Navegando para formulário...")
-            driver.get(URL_FORMULARIO_DIRETO)
             wait = WebDriverWait(driver, 30)
+            
+            atualizar_status("Clicando em 'Abrir'...")
+            wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_ABRIR_MENU))).click()
+            time.sleep(0.6) # Delay ajustado
+
+            atualizar_status("Clicando na aba 'Favoritos'...")
+            wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_TAB_FAVORITOS))).click()
+            time.sleep(0.4) # Delay ajustado
+
+            atualizar_status("Selecionando processo 'TI - Operador'...")
+            wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_LINK_PROCESSO_TI))).click()
+            time.sleep(1.5) # Mantém uma pausa maior aqui para o formulário carregar
             
             atualizar_status("Procurando formulário (iframe)...")
             wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, ID_IFRAME)))
             
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_CASA, ID_LUPA_INPUT_CASA, TEXTO_CASA): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_CASA, ID_LUPA_INPUT_CASA, TEXTO_CASA): return
             
             atualizar_status("Preenchendo Ramal...")
             driver.find_element(By.ID, ID_RAMAL).send_keys(TEXTO_RAMAL)
             
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_CATEGORIA, ID_LUPA_INPUT_CATEGORIA, TEXTO_CATEGORIA): return
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_SUBCATEGORIA, ID_LUPA_INPUT_SUBCATEGORIA, TEXTO_SUBCATEGORIA): return
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_SERVICO, ID_LUPA_INPUT_SERVICO, TEXTO_SERVICO): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_CATEGORIA, ID_LUPA_INPUT_CATEGORIA, TEXTO_CATEGORIA): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SUBCATEGORIA, ID_LUPA_INPUT_SUBCATEGORIA, TEXTO_SUBCATEGORIA): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SERVICO, ID_LUPA_INPUT_SERVICO, TEXTO_SERVICO): return
             
             atualizar_status("Selecionando Tipo de Solicitação...")
-            dropdown = Select(driver.find_element(By.ID, ID_TIPO_SOLICITACAO))
-            dropdown.select_by_visible_text(TEXTO_TIPO_SOLICITACAO)
+            dropdown = Select(driver.find_element(By.ID, ID_DROPDOWN_TIPO_SOLICITACAO))
+            dropdown.select_by_visible_text(TEXTO_DROPDOWN_TIPO_SOLICITACAO)
             
-            if not preencher_campo_lupa(wait, atualizar_status, ID_CONTAINER_GRUPO_ATEND, ID_LUPA_INPUT_GRUPO_ATEND, TEXTO_GRUPO_ATEND): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_GRUPO_ATEND, ID_LUPA_INPUT_GRUPO_ATEND, TEXTO_GRUPO_ATEND): return
             
             atualizar_status("Preenchendo Título...")
             driver.find_element(By.ID, ID_TITULO).send_keys(TEXTO_TITULO)

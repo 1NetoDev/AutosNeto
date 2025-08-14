@@ -37,7 +37,7 @@ XPATH_BOTAO_ABRIR_MENU = "//li[.//span[text()='Abrir']]"
 XPATH_TAB_FAVORITOS = "/html/body/div[3]/div/div[2]/div/div/div/div/div[1]/div[2]/div[1]/div/div/div/div/div[1]/div[3]"
 XPATH_LINK_PROCESSO_TI = "/html/body/div[3]/div/div[2]/div/div/div/div/div[1]/div[2]/div[3]/div[3]/div[2]/div/div[2]"
 
-# 4. IDs e Seletores do Formulário e Pop-ups (ATUALIZADOS)
+# 4. IDs e Seletores do Formulário e Pop-ups
 ID_IFRAME = "iframe-form-app"
 XPATH_RAMAL = "//*[@id='LT_RAMAL']"
 XPATH_DROPDOWN_TIPO_SOLICITACAO = "//*[@id='LS_PROCESSO']"
@@ -45,14 +45,14 @@ XPATH_TITULO = "//*[@id='LT_TITULO_REQUISICAO']"
 CSS_SELECTOR_BOTAO_FECHAR_WELCOME = "span.ant-modal-close-x"
 XPATH_BOTAO_FECHAR_MENSAGENS = "//*[@id='social']/div/div/div[2]/div[1]/div[1]/div/div[2]/i[3]"
 
-# 5. XPaths dos ícones de LUPA (ATUALIZADOS)
+# 5. XPaths dos ícones de LUPA
 XPATH_LUPA_CASA = "//*[@id='LT_CASA_lookup']"
 XPATH_LUPA_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup']"
 XPATH_LUPA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup']"
 XPATH_LUPA_SERVICO = "//*[@id='LT_SERVICO_lookup']"
 XPATH_LUPA_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup']"
 
-# 6. IDs dos campos de BUSCA dentro de cada Lupa (CORRIGIDOS)
+# 6. IDs dos campos de BUSCA dentro de cada Lupa
 ID_LUPA_INPUT_CASA = "LT_CASA__lookup-modal"
 ID_LUPA_INPUT_CATEGORIA = "LT_CATEGORIA__lookup-modal"
 ID_LUPA_INPUT_SUBCATEGORIA = "LT_SUB_CAT__lookup-modal"
@@ -69,9 +69,18 @@ TEXTO_DROPDOWN_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES"
 TEXTO_GRUPO_ATEND = "Servicedesk"
 TEXTO_TITULO = "Registro de Ligação"
 
-# 8. Seletor para o botão "FILTRAR" e CÉLULA DE RESULTADO dentro da Lupa
-XPATH_BOTAO_FILTRAR = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
-XPATH_CELULA_RESULTADO = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+# 8. --- CORREÇÃO --- XPaths específicos para cada botão "FILTRAR" e CÉLULA DE RESULTADO
+XPATH_FILTRAR_CASA = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_CELULA_CASA = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_FILTRAR_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_CELULA_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_FILTRAR_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_CELULA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_FILTRAR_SERVICO = "//*[@id='LT_SERVICO_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_CELULA_SERVICO = "//*[@id='LT_SERVICO_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_FILTRAR_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_CELULA_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+
 
 # =====================================================================================
 # --- FIM DAS CONFIGURAÇÕES ---
@@ -79,36 +88,28 @@ XPATH_CELULA_RESULTADO = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[
 
 driver = None
 
-def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_lupa, texto_busca):
+def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_lupa, texto_busca, xpath_botao_filtrar, xpath_celula_resultado):
     """Função para automatizar o preenchimento de campos com o padrão 'Lupa', com lógica de retentativa."""
     MAX_TENTATIVAS = 3
     for tentativa in range(1, MAX_TENTATIVAS + 1):
         try:
             status_updater(f"Lupa: {texto_busca} (Tentativa {tentativa})...")
             
-            lupa_icon = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_lupa_icon)))
-            lupa_icon.click()
-            
-            # --- DELAY AUMENTADO ---
-            time.sleep(1.5)
+            wait.until(EC.element_to_be_clickable((By.XPATH, xpath_lupa_icon))).click()
+            time.sleep(1.0)
             
             campo_busca = wait.until(EC.presence_of_element_located((By.ID, id_campo_busca_lupa)))
             
             actions = ActionChains(driver)
             actions.move_to_element(campo_busca).click().pause(0.5).send_keys(texto_busca).perform()
             
-            # Pausa para o texto ser processado antes de filtrar
-            time.sleep(0.5)
-            
-            botao_filtrar = wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_FILTRAR)))
+            botao_filtrar = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_botao_filtrar)))
             botao_filtrar.click()
-            
             time.sleep(0.3)
             
             status_updater("Aguardando resultado...")
-            primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_CELULA_RESULTADO)))
+            primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_celula_resultado)))
             primeiro_resultado.click()
-            
             time.sleep(0.3)
             
             status_updater(f"OK: {texto_busca} selecionado.")
@@ -118,7 +119,6 @@ def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_l
             if tentativa < MAX_TENTATIVAS:
                 status_updater(f"Retentando Lupa: {texto_busca}...")
                 try:
-                    # Tenta fechar a modal para recomeçar
                     driver.find_element(By.XPATH, "//button[text()='FECHAR']").click()
                     time.sleep(0.5)
                 except:
@@ -167,17 +167,15 @@ def iniciar_navegador(status_label, botoes):
             atualizar_status("Login OK. Procurando pop-ups...")
             try:
                 wait.until(EC.element_to_be_clickable((By.CSS_SELECTOR, CSS_SELECTOR_BOTAO_FECHAR_WELCOME))).click()
-                atualizar_status("Pop-up de boas-vindas fechado.")
                 time.sleep(1.0)
             except TimeoutException:
-                atualizar_status("Pop-up de boas-vindas não encontrado.")
+                pass
 
             try:
                 short_wait = WebDriverWait(driver, 3)
                 short_wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_FECHAR_MENSAGENS))).click()
-                atualizar_status("Janela de mensagens fechada.")
             except TimeoutException:
-                atualizar_status("Janela de mensagens não encontrada.")
+                pass
 
             atualizar_status("Navegador pronto!")
             for botao in botoes.values():
@@ -223,20 +221,20 @@ def preencher_formulario(status_label):
             atualizar_status("Procurando formulário (iframe)...")
             wait.until(EC.frame_to_be_available_and_switch_to_it((By.ID, ID_IFRAME)))
             
-            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_CASA, ID_LUPA_INPUT_CASA, TEXTO_CASA): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_CASA, ID_LUPA_INPUT_CASA, TEXTO_CASA, XPATH_FILTRAR_CASA, XPATH_CELULA_CASA): return
             
             atualizar_status("Preenchendo Ramal...")
             driver.find_element(By.XPATH, XPATH_RAMAL).send_keys(TEXTO_RAMAL)
             
-            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_CATEGORIA, ID_LUPA_INPUT_CATEGORIA, TEXTO_CATEGORIA): return
-            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SUBCATEGORIA, ID_LUPA_INPUT_SUBCATEGORIA, TEXTO_SUBCATEGORIA): return
-            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SERVICO, ID_LUPA_INPUT_SERVICO, TEXTO_SERVICO): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_CATEGORIA, ID_LUPA_INPUT_CATEGORIA, TEXTO_CATEGORIA, XPATH_FILTRAR_CATEGORIA, XPATH_CELULA_CATEGORIA): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SUBCATEGORIA, ID_LUPA_INPUT_SUBCATEGORIA, TEXTO_SUBCATEGORIA, XPATH_FILTRAR_SUBCATEGORIA, XPATH_CELULA_SUBCATEGORIA): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SERVICO, ID_LUPA_INPUT_SERVICO, TEXTO_SERVICO, XPATH_FILTRAR_SERVICO, XPATH_CELULA_SERVICO): return
             
             atualizar_status("Selecionando Tipo de Solicitação...")
             dropdown = Select(driver.find_element(By.XPATH, XPATH_DROPDOWN_TIPO_SOLICITACAO))
             dropdown.select_by_visible_text(TEXTO_DROPDOWN_TIPO_SOLICITACAO)
             
-            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_GRUPO_ATEND, ID_LUPA_INPUT_GRUPO_ATEND, TEXTO_GRUPO_ATEND): return
+            if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_GRUPO_ATEND, ID_LUPA_INPUT_GRUPO_ATEND, TEXTO_GRUPO_ATEND, XPATH_FILTRAR_GRUPO_ATEND, XPATH_CELULA_GRUPO_ATEND): return
             
             atualizar_status("Preenchendo Título...")
             driver.find_element(By.XPATH, XPATH_TITULO).send_keys(TEXTO_TITULO)
@@ -280,9 +278,9 @@ def reiniciar_login(status_label, botoes):
         status_label.config(text="Status: Reiniciando para o login...")
         driver.get(URL_SISTEMA)
         status_label.config(text="Status: Aguardando novo login...")
-        # Desabilita os botões de ação até que o login seja feito novamente
         botoes['preencher'].config(state=tk.DISABLED)
         botoes['cancelar'].config(state=tk.DISABLED)
+        botoes['reiniciar_login'].config(state=tk.DISABLED)
 
     threading.Thread(target=run_restart, daemon=True).start()
 
@@ -316,9 +314,8 @@ def criar_interface():
     status_label = tk.Label(main_frame, text="Status: Aguardando início...", bd=1, relief="sunken", anchor="w", padx=5)
     status_label.pack(side="bottom", fill="x", pady=(10, 0))
     
-    # Desabilita os botões de ação no início
-    botoes['preencher'].config(state=tk.DISABLED)
-    botoes['cancelar'].config(state=tk.DISABLED)
+    for key in ['preencher', 'cancelar', 'reiniciar_login']:
+        botoes[key].config(state=tk.DISABLED)
 
     root.mainloop()
 

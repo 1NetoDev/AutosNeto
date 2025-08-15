@@ -77,6 +77,7 @@ XPATH_CAMPO_BUSCA_SOLICITACAO = "//*[@id='LS_PROCESSO_search']"
 XPATH_RESULTADO_SOLICITACAO = "//div[@class='ant-select-item-option-content' and text()='INFRAESTRUTURA SOFTWARES']"
 
 
+
 # 9. Textos Padrão para os Campos
 TEXTO_CASA = "HOSPITAL SANTA CATARINA"
 TEXTO_RAMAL = "8080"

@@ -1,0 +1,1 @@
+[2025-08-15 16:19:41] Erro no login: cannot access local variable 'driver' where it is not associated with a value

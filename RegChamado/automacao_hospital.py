@@ -71,9 +71,9 @@ XPATH_CELULA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup-modal']/div[2]/div/div[2
 XPATH_CELULA_SERVICO = "//*[@id='LT_SERVICO_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
 XPATH_CELULA_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
 
-# 8. --- ATUALIZADO --- Seletores para o campo "Tipo de Solicitação" (busca interativa)
-XPATH_CONTAINER_SOLICITACAO = "//*[@id='LS_PROCESSO']" # O container que precisa ser clicado para ABRIR a busca
-XPATH_CAMPO_BUSCA_SOLICITACAO = "//*[@id='LS_PROCESSO_search']" # O campo de input que aparece para DIGITAR
+# 8. Seletores para o campo "Tipo de Solicitação" (busca interativa)
+XPATH_CONTAINER_SOLICITACAO = "//*[@id='LS_PROCESSO']"
+XPATH_CAMPO_BUSCA_SOLICITACAO = "//*[@id='LS_PROCESSO_search']"
 XPATH_RESULTADO_SOLICITACAO = "//div[@class='ant-select-item-option-content' and text()='INFRAESTRUTURA SOFTWARES']"
 
 
@@ -83,7 +83,7 @@ TEXTO_RAMAL = "8080"
 TEXTO_CATEGORIA = "Software"
 TEXTO_SUBCATEGORIA = "Navegadores"
 TEXTO_SERVICO = "Configuração"
-TEXTO_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES" # Texto a ser buscado
+TEXTO_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES"
 TEXTO_GRUPO_ATEND = "Servicedesk"
 TEXTO_TITULO = "Registro de Ligação"
 
@@ -102,16 +102,16 @@ def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_l
             status_updater(f"Lupa: {texto_busca} (Tentativa {tentativa})...")
             
             wait.until(EC.element_to_be_clickable((By.XPATH, xpath_lupa_icon))).click()
-            time.sleep(1.0) # Pausa para garantir que a modal abriu
+            time.sleep(1.0) # Delay original mantido
             
             campo_busca = wait.until(EC.visibility_of_element_located((By.ID, id_campo_busca_lupa)))
             
             actions = ActionChains(driver)
-            actions.move_to_element(campo_busca).click().pause(0.5).send_keys(texto_busca).perform()
+            actions.move_to_element(campo_busca).click().pause(0.5).send_keys(texto_busca).perform() # Delay original mantido
             
             botao_filtrar = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_botao_filtrar)))
             botao_filtrar.click()
-            time.sleep(0.5) # Pausa para o resultado do filtro carregar
+            time.sleep(0.5) # Delay original mantido
             
             status_updater("Aguardando resultado...")
             primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_celula_resultado)))
@@ -125,32 +125,27 @@ def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_l
             if tentativa < MAX_TENTATIVAS:
                 status_updater(f"Retentando Lupa: {texto_busca}...")
                 try:
-                    # Tenta fechar a janela da lupa para recomeçar
                     driver.find_element(By.XPATH, "//button[span[text()='Fechar']]").click()
                     time.sleep(0.5)
                 except:
-                    pass # Se não encontrar o botão fechar, continua
+                    pass
             else:
                 status_updater(f"ERRO na Lupa: {texto_busca}!")
                 return False
 
 def preencher_campo_busca_interativa(wait, status_updater, xpath_campo_busca, texto_busca, xpath_resultado):
-    """
-    Preenche campos com busca interativa (digita e seleciona da lista).
-    Esta função assume que o campo de busca JÁ ESTÁ VISÍVEL.
-    """
+    """Preenche campos com busca interativa usando ActionChains para maior confiabilidade."""
     MAX_TENTATIVAS = 3
     for tentativa in range(1, MAX_TENTATIVAS + 1):
         try:
             status_updater(f"Busca: {texto_busca} (Tentativa {tentativa})...")
             
-            campo_busca = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_campo_busca)))
-            campo_busca.click()
-            time.sleep(0.5)
-            campo_busca.send_keys(texto_busca)
+            campo_busca = wait.until(EC.visibility_of_element_located((By.XPATH, xpath_campo_busca)))
+            
+            actions = ActionChains(driver)
+            actions.move_to_element(campo_busca).click().pause(0.5).send_keys(texto_busca).perform() # Delay exclusivo para a busca
             
             status_updater("Aguardando item na lista...")
-            # Espera o item com o texto exato aparecer na lista de resultados
             item_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_resultado)))
             item_resultado.click()
             time.sleep(0.3)
@@ -162,9 +157,7 @@ def preencher_campo_busca_interativa(wait, status_updater, xpath_campo_busca, te
             if tentativa < MAX_TENTATIVAS:
                 status_updater(f"Retentando Busca: {texto_busca}...")
                 try:
-                    # Tenta limpar o campo para a próxima tentativa
-                    driver.find_element(By.XPATH, xpath_campo_busca).send_keys(Keys.CONTROL + "a")
-                    driver.find_element(By.XPATH, xpath_campo_busca).send_keys(Keys.DELETE)
+                    driver.find_element(By.XPATH, xpath_campo_busca).clear()
                 except:
                     pass
             else:
@@ -250,6 +243,11 @@ def preencher_formulario(status_label):
         try:
             wait = WebDriverWait(driver, 15)
             
+            # --- MUDANÇA: REMOVIDO O RECARREGAMENTO DA PÁGINA ---
+            # Apenas garante que o foco está fora de qualquer iframe anterior.
+            atualizar_status("Preparando para novo chamado...")
+            driver.switch_to.default_content()
+            
             atualizar_status("Clicando em 'Abrir'...")
             wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_BOTAO_ABRIR_MENU))).click()
             time.sleep(0.6)
@@ -274,16 +272,17 @@ def preencher_formulario(status_label):
             if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SUBCATEGORIA, ID_LUPA_INPUT_SUBCATEGORIA, TEXTO_SUBCATEGORIA, XPATH_FILTRAR_SUBCATEGORIA, XPATH_CELULA_SUBCATEGORIA): return
             if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SERVICO, ID_LUPA_INPUT_SERVICO, TEXTO_SERVICO, XPATH_FILTRAR_SERVICO, XPATH_CELULA_SERVICO): return
             
-            # --- MUDANÇA AQUI para o campo de Solicitação ---
-            atualizar_status("Selecionando Tipo de Solicitação...")
-            # 1. Clica no container principal para revelar o campo de busca.
-            wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_CONTAINER_SOLICITACAO))).click()
-            time.sleep(0.5) # Pausa para o campo de busca aparecer.
+            atualizar_status("Rolando a página...")
+            driver.execute_script("window.scrollBy(0, 350);")
+            time.sleep(0.5)
 
-            # 2. Agora que o campo de busca está visível, a função preenche e seleciona o item.
-            if not preencher_campo_busca_interativa(wait, atualizar_status, XPATH_CAMPO_BUSCA_SOLICITACAO, TEXTO_TIPO_SOLICITACAO, XPATH_RESULTADO_SOLICITACAO): return
-            
             if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_GRUPO_ATEND, ID_LUPA_INPUT_GRUPO_ATEND, TEXTO_GRUPO_ATEND, XPATH_FILTRAR_GRUPO_ATEND, XPATH_CELULA_GRUPO_ATEND): return
+            
+            atualizar_status("Selecionando Tipo de Solicitação...")
+            wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_CONTAINER_SOLICITACAO))).click()
+            time.sleep(0.5) # Delay ajustado para solicitação
+
+            if not preencher_campo_busca_interativa(wait, atualizar_status, XPATH_CAMPO_BUSCA_SOLICITACAO, TEXTO_TIPO_SOLICITACAO, XPATH_RESULTADO_SOLICITACAO): return
             
             atualizar_status("Preenchendo Título...")
             driver.find_element(By.XPATH, XPATH_TITULO).send_keys(TEXTO_TITULO)
@@ -320,27 +319,10 @@ def cancelar_formulario(status_label):
     
     threading.Thread(target=run_cancel, daemon=True).start()
 
-def reiniciar_login(status_label, botoes):
-    """Navega de volta para a página de login."""
-    global driver
-
-    def run_restart():
-        if driver is None:
-            messagebox.showwarning("Aviso", "O navegador não foi iniciado.")
-            return
-        status_label.config(text="Status: Reiniciando para o login...")
-        driver.get(URL_SISTEMA)
-        status_label.config(text="Status: Aguardando novo login...")
-        botoes['preencher'].config(state=tk.DISABLED)
-        botoes['cancelar'].config(state=tk.DISABLED)
-        botoes['reiniciar_login'].config(state=tk.DISABLED)
-
-    threading.Thread(target=run_restart, daemon=True).start()
-
 def criar_interface():
     root = tk.Tk()
     root.title("Automador de Chamados")
-    root.geometry("350x250")
+    root.geometry("350x220") # Altura diminuída
     root.attributes('-topmost', True)
     root.resizable(False, False)
 
@@ -355,19 +337,13 @@ def criar_interface():
     botoes['preencher'] = tk.Button(main_frame, text="2. Preencher Formulário", command=lambda: preencher_formulario(status_label), font=("Segoe UI", 10, "bold"), bg="#2a75bb", fg="white", relief="flat", padx=10, pady=5, state=tk.DISABLED)
     botoes['preencher'].pack(pady=5, ipady=4, fill="x")
     
-    control_frame = tk.Frame(main_frame)
-    control_frame.pack(pady=(10,0), fill="x")
-
-    botoes['cancelar'] = tk.Button(control_frame, text="Cancelar", command=lambda: cancelar_formulario(status_label), font=("Segoe UI", 9), bg="#d13438", fg="white", relief="flat")
-    botoes['cancelar'].pack(side="left", expand=True, fill="x", padx=(0, 5))
-    
-    botoes['reiniciar_login'] = tk.Button(control_frame, text="Reiniciar Login", command=lambda: reiniciar_login(status_label, botoes), font=("Segoe UI", 9), bg="#005a9e", fg="white", relief="flat")
-    botoes['reiniciar_login'].pack(side="right", expand=True, fill="x", padx=(5, 0))
+    botoes['cancelar'] = tk.Button(main_frame, text="Novo Chamado (Cancela Atual)", command=lambda: cancelar_formulario(status_label), font=("Segoe UI", 9), bg="#d13438", fg="white", relief="flat")
+    botoes['cancelar'].pack(pady=(10,0), ipady=2, fill="x")
     
     status_label = tk.Label(main_frame, text="Status: Aguardando início...", bd=1, relief="sunken", anchor="w", padx=5)
     status_label.pack(side="bottom", fill="x", pady=(10, 0))
     
-    for key in ['preencher', 'cancelar', 'reiniciar_login']:
+    for key in ['preencher', 'cancelar']:
         botoes[key].config(state=tk.DISABLED)
 
     root.mainloop()

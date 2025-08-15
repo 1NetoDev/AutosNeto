@@ -10,10 +10,10 @@ from selenium.webdriver.chrome.service import Service
 from webdriver_manager.chrome import ChromeDriverManager
 from selenium.common.exceptions import WebDriverException, TimeoutException
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.keys import Keys
 
 # =====================================================================================
 # --- CONFIGURAÇÕES (VERIFIQUE SE OS VALORES ESTÃO CORRETOS) ---
@@ -32,7 +32,7 @@ CSS_SELECTOR_BOTAO_LOGIN = "button[type='submit']"
 URL_SISTEMA = "https://app.santacatarina.lecom.com.br/sso/login?redirectBackTo=https://app.santacatarina.lecom.com.br/workspace"
 URL_WORKSPACE = "https://app.santacatarina.lecom.com.br/workspace"
 
-# 3. --- SELETORES PARA CRIAR NOVO FORMULÁRIO ---
+# 3. SELETORES PARA CRIAR NOVO FORMULÁRIO
 XPATH_BOTAO_ABRIR_MENU = "//li[.//span[text()='Abrir']]"
 XPATH_TAB_FAVORITOS = "/html/body/div[3]/div/div[2]/div/div/div/div/div[1]/div[2]/div[1]/div/div/div/div/div[1]/div[3]"
 XPATH_LINK_PROCESSO_TI = "/html/body/div[3]/div/div[2]/div/div/div/div/div[1]/div[2]/div[3]/div[3]/div[2]/div/div[2]"
@@ -40,12 +40,11 @@ XPATH_LINK_PROCESSO_TI = "/html/body/div[3]/div/div[2]/div/div/div/div/div[1]/di
 # 4. IDs e Seletores do Formulário e Pop-ups
 ID_IFRAME = "iframe-form-app"
 XPATH_RAMAL = "//*[@id='LT_RAMAL']"
-XPATH_DROPDOWN_TIPO_SOLICITACAO = "//*[@id='LS_PROCESSO']"
 XPATH_TITULO = "//*[@id='LT_TITULO_REQUISICAO']"
 CSS_SELECTOR_BOTAO_FECHAR_WELCOME = "span.ant-modal-close-x"
 XPATH_BOTAO_FECHAR_MENSAGENS = "//*[@id='social']/div/div/div[2]/div[1]/div[1]/div/div[2]/i[3]"
 
-# 5. XPaths dos ícones de LUPA
+# 5. XPaths dos ícones de LUPA (para janelas pop-up de busca)
 XPATH_LUPA_CASA = "//*[@id='LT_CASA_lookup']"
 XPATH_LUPA_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup']"
 XPATH_LUPA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup']"
@@ -59,27 +58,34 @@ ID_LUPA_INPUT_SUBCATEGORIA = "LT_SUB_CAT__lookup-modal"
 ID_LUPA_INPUT_SERVICO = "LT_SERVICO__lookup-modal"
 ID_LUPA_INPUT_GRUPO_ATEND = "LT_GRUPO_ATEND__lookup-modal"
 
-# 7. Textos Padrão para os Campos
+# 7. XPaths dos botões "FILTRAR" e CÉLULAS DE RESULTADO (para Lupas)
+XPATH_FILTRAR_CASA = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_FILTRAR_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_FILTRAR_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_FILTRAR_SERVICO = "//*[@id='LT_SERVICO_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+XPATH_FILTRAR_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
+
+XPATH_CELULA_CASA = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_CELULA_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_CELULA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_CELULA_SERVICO = "//*[@id='LT_SERVICO_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+XPATH_CELULA_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
+
+# 8. --- ATUALIZADO --- Seletores para o campo "Tipo de Solicitação" (busca interativa)
+XPATH_CONTAINER_SOLICITACAO = "//*[@id='LS_PROCESSO']" # O container que precisa ser clicado para ABRIR a busca
+XPATH_CAMPO_BUSCA_SOLICITACAO = "//*[@id='LS_PROCESSO_search']" # O campo de input que aparece para DIGITAR
+XPATH_RESULTADO_SOLICITACAO = "//div[@class='ant-select-item-option-content' and text()='INFRAESTRUTURA SOFTWARES']"
+
+
+# 9. Textos Padrão para os Campos
 TEXTO_CASA = "HOSPITAL SANTA CATARINA"
 TEXTO_RAMAL = "8080"
 TEXTO_CATEGORIA = "Software"
 TEXTO_SUBCATEGORIA = "Navegadores"
 TEXTO_SERVICO = "Configuração"
-TEXTO_DROPDOWN_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES"
+TEXTO_TIPO_SOLICITACAO = "INFRAESTRUTURA SOFTWARES" # Texto a ser buscado
 TEXTO_GRUPO_ATEND = "Servicedesk"
 TEXTO_TITULO = "Registro de Ligação"
-
-# 8. --- CORREÇÃO --- XPaths específicos para cada botão "FILTRAR" e CÉLULA DE RESULTADO
-XPATH_FILTRAR_CASA = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
-XPATH_CELULA_CASA = "//*[@id='LT_CASA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
-XPATH_FILTRAR_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
-XPATH_CELULA_CATEGORIA = "//*[@id='LT_CATEGORIA_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
-XPATH_FILTRAR_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
-XPATH_CELULA_SUBCATEGORIA = "//*[@id='LT_SUB_CAT_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
-XPATH_FILTRAR_SERVICO = "//*[@id='LT_SERVICO_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
-XPATH_CELULA_SERVICO = "//*[@id='LT_SERVICO_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
-XPATH_FILTRAR_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup-modal']/div[2]/div/div[2]/div[1]/form/div[2]/button[2]"
-XPATH_CELULA_GRUPO_ATEND = "//*[@id='LT_GRUPO_ATEND_lookup-modal']/div[2]/div/div[2]/div[2]/div/div/table/tbody/tr/td[2]"
 
 
 # =====================================================================================
@@ -96,16 +102,16 @@ def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_l
             status_updater(f"Lupa: {texto_busca} (Tentativa {tentativa})...")
             
             wait.until(EC.element_to_be_clickable((By.XPATH, xpath_lupa_icon))).click()
-            time.sleep(1.0)
+            time.sleep(1.0) # Pausa para garantir que a modal abriu
             
-            campo_busca = wait.until(EC.presence_of_element_located((By.ID, id_campo_busca_lupa)))
+            campo_busca = wait.until(EC.visibility_of_element_located((By.ID, id_campo_busca_lupa)))
             
             actions = ActionChains(driver)
             actions.move_to_element(campo_busca).click().pause(0.5).send_keys(texto_busca).perform()
             
             botao_filtrar = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_botao_filtrar)))
             botao_filtrar.click()
-            time.sleep(0.3)
+            time.sleep(0.5) # Pausa para o resultado do filtro carregar
             
             status_updater("Aguardando resultado...")
             primeiro_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_celula_resultado)))
@@ -119,12 +125,50 @@ def preencher_campo_lupa(wait, status_updater, xpath_lupa_icon, id_campo_busca_l
             if tentativa < MAX_TENTATIVAS:
                 status_updater(f"Retentando Lupa: {texto_busca}...")
                 try:
-                    driver.find_element(By.XPATH, "//button[text()='FECHAR']").click()
+                    # Tenta fechar a janela da lupa para recomeçar
+                    driver.find_element(By.XPATH, "//button[span[text()='Fechar']]").click()
                     time.sleep(0.5)
+                except:
+                    pass # Se não encontrar o botão fechar, continua
+            else:
+                status_updater(f"ERRO na Lupa: {texto_busca}!")
+                return False
+
+def preencher_campo_busca_interativa(wait, status_updater, xpath_campo_busca, texto_busca, xpath_resultado):
+    """
+    Preenche campos com busca interativa (digita e seleciona da lista).
+    Esta função assume que o campo de busca JÁ ESTÁ VISÍVEL.
+    """
+    MAX_TENTATIVAS = 3
+    for tentativa in range(1, MAX_TENTATIVAS + 1):
+        try:
+            status_updater(f"Busca: {texto_busca} (Tentativa {tentativa})...")
+            
+            campo_busca = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_campo_busca)))
+            campo_busca.click()
+            time.sleep(0.5)
+            campo_busca.send_keys(texto_busca)
+            
+            status_updater("Aguardando item na lista...")
+            # Espera o item com o texto exato aparecer na lista de resultados
+            item_resultado = wait.until(EC.element_to_be_clickable((By.XPATH, xpath_resultado)))
+            item_resultado.click()
+            time.sleep(0.3)
+            
+            status_updater(f"OK: {texto_busca} selecionado.")
+            return True
+        except Exception as e:
+            print(f"Erro na tentativa {tentativa} da Busca Interativa ({texto_busca}): {e}")
+            if tentativa < MAX_TENTATIVAS:
+                status_updater(f"Retentando Busca: {texto_busca}...")
+                try:
+                    # Tenta limpar o campo para a próxima tentativa
+                    driver.find_element(By.XPATH, xpath_campo_busca).send_keys(Keys.CONTROL + "a")
+                    driver.find_element(By.XPATH, xpath_campo_busca).send_keys(Keys.DELETE)
                 except:
                     pass
             else:
-                status_updater(f"ERRO na Lupa: {texto_busca}!")
+                status_updater(f"ERRO na Busca: {texto_busca}!")
                 return False
 
 def iniciar_navegador(status_label, botoes):
@@ -230,9 +274,14 @@ def preencher_formulario(status_label):
             if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SUBCATEGORIA, ID_LUPA_INPUT_SUBCATEGORIA, TEXTO_SUBCATEGORIA, XPATH_FILTRAR_SUBCATEGORIA, XPATH_CELULA_SUBCATEGORIA): return
             if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_SERVICO, ID_LUPA_INPUT_SERVICO, TEXTO_SERVICO, XPATH_FILTRAR_SERVICO, XPATH_CELULA_SERVICO): return
             
+            # --- MUDANÇA AQUI para o campo de Solicitação ---
             atualizar_status("Selecionando Tipo de Solicitação...")
-            dropdown = Select(driver.find_element(By.XPATH, XPATH_DROPDOWN_TIPO_SOLICITACAO))
-            dropdown.select_by_visible_text(TEXTO_DROPDOWN_TIPO_SOLICITACAO)
+            # 1. Clica no container principal para revelar o campo de busca.
+            wait.until(EC.element_to_be_clickable((By.XPATH, XPATH_CONTAINER_SOLICITACAO))).click()
+            time.sleep(0.5) # Pausa para o campo de busca aparecer.
+
+            # 2. Agora que o campo de busca está visível, a função preenche e seleciona o item.
+            if not preencher_campo_busca_interativa(wait, atualizar_status, XPATH_CAMPO_BUSCA_SOLICITACAO, TEXTO_TIPO_SOLICITACAO, XPATH_RESULTADO_SOLICITACAO): return
             
             if not preencher_campo_lupa(wait, atualizar_status, XPATH_LUPA_GRUPO_ATEND, ID_LUPA_INPUT_GRUPO_ATEND, TEXTO_GRUPO_ATEND, XPATH_FILTRAR_GRUPO_ATEND, XPATH_CELULA_GRUPO_ATEND): return
             
@@ -247,7 +296,11 @@ def preencher_formulario(status_label):
             atualizar_status(error_message)
             print(f"Erro detalhado: {e}")
             if driver:
-                driver.save_screenshot('erro_fatal.png')
+                try:
+                    driver.save_screenshot('erro_fatal.png')
+                    print("Screenshot 'erro_fatal.png' salvo.")
+                except Exception as screenshot_error:
+                    print(f"Falha ao salvar screenshot: {screenshot_error}")
             messagebox.showerror("Erro na Automação", f"Ocorreu um erro inesperado.\n\n{error_message}")
 
     threading.Thread(target=run_fill, daemon=True).start()
